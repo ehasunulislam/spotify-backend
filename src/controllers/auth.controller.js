@@ -2,15 +2,13 @@ const userModel = require("../models/user.model");
 const jwt = require("jsonwebtoken");
 const bcryptjs = require("bcryptjs");
 
+// register functionality
 async function registerUser(req, res) {
   try {
     const { userName, email, password, role = "user" } = req.body;
 
     const existingUser = await userModel.findOne({
-      $or: [
-            { userName }, 
-            { email }
-        ],
+      $or: [{ userName }, { email }],
     });
 
     if (existingUser) {
@@ -19,7 +17,7 @@ async function registerUser(req, res) {
       });
     }
 
-    const hash = await bcryptjs.hash(password, 10)
+    const hash = await bcryptjs.hash(password, 10);
 
     const user = await userModel.create({
       userName,
@@ -42,7 +40,6 @@ async function registerUser(req, res) {
       message: "user register successfully",
       user,
     });
-
   } catch (err) {
     res.status(500).json({
       message: "Server error",
@@ -51,5 +48,49 @@ async function registerUser(req, res) {
   }
 }
 
+// login functionality
+async function loginUser(req, res) {
+  try {
+    const { userName, email, password } = req.body;
 
-module.exports = {registerUser}
+    const user = await userModel.findOne({
+      $or: [{ userName }, { email }],
+    });
+
+    if (!user) {
+      return res.status(401).json({
+        message: "Invalid credential",
+      });
+    }
+
+    const isPasswordValid = await bcryptjs.compare(password, user.password);
+
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        message: "IInvalid credential",
+      });
+    }
+
+    const token = jwt.sign(
+      {
+        id: user._id,
+        role: user.role,
+      },
+      process.env.JWT_SECRET,
+    );
+
+    res.cookie("token", token);
+
+    res.status(201).json({
+      message: "user login successfully",
+      user,
+    });
+  } catch (err) {
+    res.status(500).json({
+      message: "Server error",
+      error: err.message,
+    });
+  }
+}
+
+module.exports = { registerUser, loginUser };

@@ -6,9 +6,14 @@ const router = express.Router();
 const authController = require("../controllers/auth.controller");
 
 
-/* api start */
+/* register api start */
 router.post("/register", authController.registerUser);
-/* api end */
+/* register api end */
+
+
+/* login api start */
+router.post("/login", authController.loginUser)
+/* login api end */
 
 
 
